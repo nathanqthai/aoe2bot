@@ -58,12 +58,29 @@ class ELO(commands.Cog):
     @commands.command()
     async def elo(self, ctx, name, game_type: str = "all") -> None:
         """
-        Implements the !elo command.
+        Check a player's elo. Player names with spaces must be in quotes.
 
-        :param ctx: The discord context
-        :param name: The player name to lookup
-        :param game_type: The game type command that specifies the leaderboard
-        :return: None
+        Usage: !elo <player_name> <game_type>
+            - player_name:
+                The player's username
+            - game_type (optional):
+                This can be any of the following options:
+                    - "all": All leaderboards, default
+                    - "solo": 1v1 Random Map Only
+                    - "team": Team Random Map Only
+
+        Examples:
+            Get all ELOs for player `GL.TheViper`:
+                !elo GL.TheViper
+
+            Get 1v1 Random Map ELO for `GL.TheViper`:
+                !elo GL.TheViper solo
+
+            Get Team Random Map ELO for `GL.TheViper`:
+                !elo GL.TheViper team
+
+            Get ELO for a player with a space in the name:
+                !elo "[aM] Liereyy"
         """
         self.log.info(f"Looking up player {name}")
 
