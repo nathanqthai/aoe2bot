@@ -2,7 +2,7 @@ import enum
 import logging
 from typing import Dict, Optional, Any, Union, List
 
-import requests
+import requests  # type: ignore
 
 
 class AoE2net:
