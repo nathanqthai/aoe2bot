@@ -283,7 +283,7 @@ class AoE2Bot(commands.Bot):
 
         self.log = logging.getLogger(f"{self.__class__.__name__}")
 
-        self.__token = os.getenv("DISCORD_BOT_TOKEN_DEV")
+        self.__token = os.getenv("DISCORD_BOT_TOKEN")
         if self.__token is None:
             self.log.error("Invalid token in DISCORD_BOT_TOKEN env var!")
 
