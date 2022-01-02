@@ -104,6 +104,13 @@ class Taunt(commands.Cog):
                 return self._do_api.get_object(self._space, taunt["file"])
         return None
 
+    async def on_voice_state_update(self, member, before, after):
+        voice_state = member.guild.voice_client
+        # Checking if the bot is connected to a channel and if there is only 1 member connected to it (the bot itself)
+        if voice_state is not None and len(voice_state.channel.members) == 1:
+            # You should also check if the song is still playing
+            await voice_state.disconnect()
+
     @commands.command()
     async def taunt(self, ctx, number: int) -> None:
         """
@@ -122,9 +129,19 @@ class Taunt(commands.Cog):
 
         await ctx.send(taunt_text)
 
-        voice_channel: discord.VoiceChannel = ctx.author.voice.channel
-        if voice_channel:
-            voice_client: discord.VoiceClient = await voice_channel.connect(timeout=10)  # type: ignore
+        # check if sender is in a voice channel
+        author_voice: discord.member.VoiceState = ctx.author.voice
+        if not author_voice:
+            return
+
+        author_channel: discord.VoiceChannel = author_voice.channel
+        if author_channel:
+            for client_channel in ctx.bot.voice_clients:
+                if author_channel != client_channel:
+                    await client_channel.disconnect()
+                    break
+
+            voice_client: discord.VoiceClient = await author_channel.connect(timeout=10)  # type: ignore
 
             taunt_audio: io.BytesIO = self.get_taunt_audio(number)
 
