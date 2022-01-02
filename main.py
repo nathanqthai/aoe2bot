@@ -7,7 +7,7 @@ log = logging.getLogger("main")
 
 logging.getLogger("asyncio").setLevel(logging.INFO)
 logging.getLogger("botocore").setLevel(logging.INFO)
-logging.getLogger("discord").setLevel(logging.WARNING)
+logging.getLogger("discord").setLevel(logging.DEBUG)
 logging.getLogger("s3transfer").setLevel(logging.INFO)
 logging.getLogger("urllib3").setLevel(logging.INFO)
 
