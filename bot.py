@@ -130,6 +130,8 @@ class Taunt(commands.Cog):
         author_channel: discord.VoiceChannel = author_voice.channel
         if author_channel:
             for client_channel in ctx.bot.voice_clients:
+                self.log.info(client_channel)
+                self.log.info(dir(client_channel))
                 await client_channel.disconnect()
 
             voice_client: discord.VoiceClient = await author_channel.connect(timeout=10)  # type: ignore
@@ -138,7 +140,7 @@ class Taunt(commands.Cog):
 
             voice_client.play(discord.PCMAudio(taunt_audio))
             while voice_client.is_playing():
-                time.sleep(0.1)
+                time.sleep(.1)
 
             taunt_audio.close()
 
