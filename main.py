@@ -13,7 +13,7 @@ logging.getLogger("urllib3").setLevel(logging.INFO)
 
 
 def main() -> None:
-    test = bot.AoE2Bot(command_prefix="$")
+    test = bot.AoE2Bot(command_prefix="!")
     test.run()
 
 
