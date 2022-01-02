@@ -137,9 +137,9 @@ class Taunt(commands.Cog):
         self._manifest = json.load(self._do_api.get_object(self._space, manifest))
         self._taunt_min, self._taunt_max = self.get_taunt_range()
 
-        discord.opus.load_opus()
+        discord.opus.load_opus("libopus.so.0")
         if not discord.opus.is_loaded():
-            raise Exception('Opus failed to load')
+            raise Exception("Opus failed to load")
 
         self.log.info(f"Registered {self.__class__.__name__} cog to {bot_name}")
 
