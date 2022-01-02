@@ -2,7 +2,6 @@ import io
 import json
 import logging
 import os
-import time
 from typing import Optional, Dict, Any, List, Tuple
 
 import discord  # type: ignore
@@ -10,6 +9,11 @@ from discord.ext import commands  # type: ignore
 
 import aoe2net
 import utils
+
+# for pcm audio hotfix
+import subprocess
+import shlex
+from discord.opus import Encoder  # type: ignore
 
 
 class CommandErrorHandler(commands.Cog):
@@ -44,6 +48,58 @@ class CommandErrorHandler(commands.Cog):
             self.log.exception("Unhandled exception occurred")
 
         await ctx.send(text)
+
+
+class FFmpegPCMAudio(discord.AudioSource):
+    # https://github.com/Rapptz/discord.py/issues/5192
+    def __init__(
+        self,
+        source,
+        *,
+        executable="ffmpeg",
+        pipe=False,
+        stderr=None,
+        before_options=None,
+        options=None,
+    ):
+        stdin = None if not pipe else source
+        args = [executable]
+        if isinstance(before_options, str):
+            args.extend(shlex.split(before_options))
+        args.append("-i")
+        args.append("-" if pipe else source)
+        args.extend(("-f", "s16le", "-ar", "48000", "-ac", "2", "-loglevel", "warning"))
+        if isinstance(options, str):
+            args.extend(shlex.split(options))
+        args.append("pipe:1")
+        self._process = None
+        try:
+            self._process = subprocess.Popen(
+                args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=stderr
+            )
+            self._stdout = io.BytesIO(self._process.communicate(input=stdin)[0])
+        except FileNotFoundError:
+            raise discord.ClientException(executable + " was not found.") from None
+        except subprocess.SubprocessError as exc:
+            raise discord.ClientException(
+                "Popen failed: {0.__class__.__name__}: {0}".format(exc)
+            ) from exc
+
+    def read(self):
+        ret = self._stdout.read(Encoder.FRAME_SIZE)
+        if len(ret) != Encoder.FRAME_SIZE:
+            return b""
+        return ret
+
+    def cleanup(self):
+        proc = self._process
+        if proc is None:
+            return
+        proc.kill()
+        if proc.poll() is None:
+            proc.communicate()
+
+        self._process = None
 
 
 class Taunt(commands.Cog):
@@ -128,23 +184,23 @@ class Taunt(commands.Cog):
             return
 
         author_channel: discord.VoiceChannel = author_voice.channel
+        voice_client: Optional[discord.VoiceClient] = None
         if author_channel:
-            for client_channel in ctx.bot.voice_clients:
-                self.log.info(client_channel)
-                self.log.info(dir(client_channel))
-                await client_channel.disconnect()
+            for vc in ctx.bot.voice_clients:
+                if vc.channel == author_channel:
+                    voice_client = vc
+                    break
 
-            voice_client: discord.VoiceClient = await author_channel.connect(timeout=10)  # type: ignore
+            if voice_client is None:
+                voice_client = await author_channel.connect(timeout=10)  # type: ignore
 
             taunt_audio: io.BytesIO = self.get_taunt_audio(number)
 
-            voice_client.play(discord.PCMAudio(taunt_audio))
-            while voice_client.is_playing():
-                time.sleep(.1)
+            voice_client.play(FFmpegPCMAudio(taunt_audio.read(), pipe=True))
 
             taunt_audio.close()
 
-            await voice_client.disconnect()
+            # await voice_client.disconnect()
 
 
 class ELO(commands.Cog):
@@ -268,7 +324,7 @@ class AoE2Bot(commands.Bot):
         """Adds all cogs"""
         self.add_cog(ELO(self, self.__class__.__name__))
         self.add_cog(Taunt(self, self.__class__.__name__))
-        self.add_cog(CommandErrorHandler(self, self.__class__.__name__))
+        # self.add_cog(CommandErrorHandler(self, self.__class__.__name__))
 
     def run(self) -> None:
         super().run(self.__token)
