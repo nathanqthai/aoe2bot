@@ -137,9 +137,7 @@ class Taunt(commands.Cog):
         author_channel: discord.VoiceChannel = author_voice.channel
         if author_channel:
             for client_channel in ctx.bot.voice_clients:
-                if author_channel != client_channel:
-                    await client_channel.disconnect()
-                    break
+                await client_channel.disconnect()
 
             voice_client: discord.VoiceClient = await author_channel.connect(timeout=10)  # type: ignore
 
@@ -285,7 +283,7 @@ class AoE2Bot(commands.Bot):
 
         self.log = logging.getLogger(f"{self.__class__.__name__}")
 
-        self.__token = os.getenv("DISCORD_BOT_TOKEN")
+        self.__token = os.getenv("DISCORD_BOT_TOKEN_DEV")
         if self.__token is None:
             self.log.error("Invalid token in DISCORD_BOT_TOKEN env var!")
 
