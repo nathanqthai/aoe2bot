@@ -85,7 +85,6 @@ class AoE2net:
             language != self._strings.get("language", "none")
         ):
             self._strings = self.call_api("strings", params={"language": language})
-        self.log.debug(self._strings)
         return self._strings
 
     def leaderboard(
@@ -175,8 +174,9 @@ class AoE2net:
 
     def lookup_string(self, key: str, key_id: int) -> Optional[str]:
         s: Optional[str] = None
-        for lookups in self._strings.get(key, []):
-            if lookups["id"] == key_id:
-                s = lookups["string"]
-                break
+        if self._strings:
+            for lookups in self._strings.get(key, []):
+                if lookups["id"] == key_id:
+                    s = lookups["string"]
+                    break
         return s
