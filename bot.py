@@ -104,13 +104,6 @@ class Taunt(commands.Cog):
                 return self._do_api.get_object(self._space, taunt["file"])
         return None
 
-    async def on_voice_state_update(self, member, before, after):
-        voice_state = member.guild.voice_client
-        # Checking if the bot is connected to a channel and if there is only 1 member connected to it (the bot itself)
-        if voice_state is not None and len(voice_state.channel.members) == 1:
-            # You should also check if the song is still playing
-            await voice_state.disconnect()
-
     @commands.command()
     async def taunt(self, ctx, number: int) -> None:
         """
