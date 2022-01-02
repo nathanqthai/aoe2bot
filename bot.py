@@ -1,3 +1,4 @@
+import asyncio
 import io
 import json
 import logging
@@ -179,24 +180,22 @@ class Taunt(commands.Cog):
         await ctx.send(taunt_text)
 
         # check if sender is in a voice channel
-        author_voice: discord.member.VoiceState = ctx.author.voice
-        if not author_voice:
+        if not ctx.author.voice:
             return
 
-        author_channel: discord.VoiceChannel = author_voice.channel
-        voice_client: Optional[discord.VoiceClient] = None
-        if author_channel:
-            for vc in ctx.bot.voice_clients:
-                if vc.channel == author_channel:
-                    voice_client = vc
-                    break
-
-            if voice_client is None:
-                voice_client = await author_channel.connect(timeout=10)  # type: ignore
+        if ctx.author.voice.channel:
+            if ctx.bot.voice_clients:
+                voice_client: discord.VoiceClient = ctx.bot.voice_clients[0]
+                if voice_client.channel != ctx.author.voice.channel:
+                    await voice_client.move_to(ctx.author.voice.channel)
+            else:
+                voice_client = await ctx.author.voice.channel.connect(timeout=10)  # type: ignore
 
             taunt_audio: io.BytesIO = self.get_taunt_audio(number)
 
             voice_client.play(FFmpegPCMAudio(taunt_audio.read(), pipe=True))
+            while voice_client.is_playing():
+                await asyncio.sleep(5)
 
             taunt_audio.close()
 
@@ -324,7 +323,7 @@ class AoE2Bot(commands.Bot):
         """Adds all cogs"""
         self.add_cog(ELO(self, self.__class__.__name__))
         self.add_cog(Taunt(self, self.__class__.__name__))
-        # self.add_cog(CommandErrorHandler(self, self.__class__.__name__))
+        self.add_cog(CommandErrorHandler(self, self.__class__.__name__))
 
     def run(self) -> None:
         super().run(self.__token)
