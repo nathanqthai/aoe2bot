@@ -43,4 +43,6 @@
 ## Getting Started
 
 ### Installation
+Generate the taunt files and manifest using the `./tools/taunt_scraper.py` script.
+
 The bot looks for a Discord Bot Token in the `DISCORD_BOT_TOKEN` environment variable.
