@@ -53,7 +53,7 @@ class AoE2net:
         :param endpoint: The endpoint to call
         :param method: The HTTP method to be used
         :param params: The parameters to be used
-        :raises: Raises an an error on any HTTP request failure
+        :raises: Raises an error on any HTTP request failure
         :return: A dictionary of the JSON API response
         """
         url = f"{self._base_url}/{endpoint}"
@@ -117,6 +117,10 @@ class AoE2net:
             "count": count,
             "leaderboard_id": board.value,
         }
+        if not any([name, steam_id, profile_id]):
+            raise TypeError(
+                "Must specify at least one of the following arguments: 'name', 'steam_id', 'profile_id'"
+            )
         if name:
             params.update({"search": name})
         if steam_id:
@@ -125,9 +129,7 @@ class AoE2net:
             params.update({"profile_id": profile_id})
         params.update(self._base_params)
         self.log.debug("Fetching leaderboard...")
-        leaderboard = self.call_api("leaderboard", params=params)
-        self.log.debug(leaderboard)
-        return leaderboard
+        return self.call_api("leaderboard", params=params)
 
     def search(
         self, name: str, board: LeaderboardID = LeaderboardID.RANDOM_MAP
@@ -147,6 +149,36 @@ class AoE2net:
         self.log.debug(f"Searching for {name}")
         return self.leaderboard(board=board, name=name).get("leaderboard", [])
 
+    def matches(
+        self,
+        start: int = 1,
+        count: int = 10000,
+        steam_ids: Union[List[Union[str, int]], Union[str, int]] = None,
+        profile_ids: Union[List[Union[str, int]], Union[str, int]] = None,
+    ):
+        if bool(steam_ids) == bool(profile_ids):
+            raise TypeError(
+                "One, and only one, of the following parameters must be passed: 'steam_ids' or 'profile_ids'"
+            )
+
+        params: Dict[str, Any] = {
+            "start": start,
+            "count": count,
+        }
+
+        for ids, id_param_name in [(steam_ids, "steam_ids"), (profile_ids, "profile_ids")]:
+            if ids:
+                if isinstance(ids, list):
+                    params.update({id_param_name: ",".join([str(p) for p in ids])})
+                elif isinstance(ids, str) or isinstance(ids, int):
+                    params.update({id_param_name: ids})
+                else:
+                    raise TypeError(
+                        "Argument 'steam_ids' must be a str/int or list of str/int"
+                    )
+
+        return self.call_api("player/matches", params=params)
+
     def find_name(
         self, name: str, board: LeaderboardID = LeaderboardID.RANDOM_MAP
     ) -> Optional[Dict[str, Any]]:
@@ -163,7 +195,6 @@ class AoE2net:
         :return: The player information
         """
         players: List[Dict[str, Any]] = self.search(name, board)
-
         matched_player: Optional[Dict[str, Any]] = None
         for player in players:
             if player.get("name", "").lower() == name.lower():

@@ -1,9 +1,13 @@
 import asyncio
+from collections import defaultdict
+import csv
+import datetime
 import io
 import json
 import logging
 import os
-from typing import Optional, Dict, Any, List, Tuple
+import sys
+from typing import Optional, Dict, Any, List, Tuple, Union
 
 import discord  # type: ignore
 from discord.ext import commands  # type: ignore
@@ -137,9 +141,10 @@ class Taunt(commands.Cog):
         self._manifest = json.load(self._do_api.get_object(self._space, manifest))
         self._taunt_min, self._taunt_max = self.get_taunt_range()
 
-        discord.opus.load_opus("libopus.so.0")
-        if not discord.opus.is_loaded():
-            raise Exception("Opus failed to load")
+        if "linux" in sys.platform:
+            discord.opus.load_opus("libopus.so.0")
+            if not discord.opus.is_loaded():
+                raise Exception("Opus failed to load")
 
         self.log.info(f"Registered {self.__class__.__name__} cog to {bot_name}")
 
@@ -204,6 +209,91 @@ class Taunt(commands.Cog):
             taunt_audio.close()
 
             # await voice_client.disconnect()
+
+
+class Civs(commands.Cog):
+    """Fetches match history for a list of players"""
+
+    def __init__(self, bot: commands.Bot, bot_name: str) -> None:
+        """
+        Initialize the Civs cog.
+
+        :param bot: The bot the cog is attached to
+        :param bot_name: The name of the bot for logging purposes
+        """
+        self.log = logging.getLogger(f"{bot_name}.{self.__class__.__name__}")
+
+        self._bot = bot
+        self._aoe2_api = aoe2net.AoE2net()
+
+        self.log.info(f"Registered {self.__class__.__name__} cog to {bot_name}")
+
+    @commands.command()
+    async def civs(self, ctx, names: str) -> None:
+        """
+        Summarizes a player's civ history and returns it as a CSV.
+
+        Usage: !matches <players>
+            - A comma separated list of player names, must have quotes if there is whitespace
+
+        Examples:
+            Get civ stats for  `GL.TheViper`:
+                !civ GL.TheViper
+
+            Get civ stats for  `GL.TheViper` and `[aM] Liereyy`:
+                !elo "GL.TheViper, [aM] Liereyy"
+        """
+        players: List[str] = [p.strip() for p in names.split(",")]
+
+        def defaultciv() -> Any:
+            return {"wins": 0, "losses": 0, "total": 0, "custom": 0}
+
+        player_stats: List[Dict[str, Any]] = []
+        for name in players:
+            player: Optional[Dict[str, Any]] = self._aoe2_api.find_name(
+                name, board=aoe2net.AoE2net.LeaderboardID.TEAM_RANDOM_MAP
+            )
+            if player is None:
+                raise ValueError(f"Failed to fetch player {player}")
+
+            profile_id: Union[str, int] = player["profile_id"]
+            matches: List[Dict[str, Any]] = self._aoe2_api.matches(
+                profile_ids=profile_id
+            )
+            stats: Dict[str, Any] = {"name": name, "stats": defaultdict(defaultciv)}
+            for match in matches:
+                for match_player in match["players"]:
+                    if match_player["profile_id"] == profile_id:
+                        civ = self._aoe2_api.lookup_string("civ", match_player["civ"])
+                        if not civ:
+                            break
+                        stats["stats"][civ]["total"] += 1
+                        win = match_player["won"]
+                        if win is None:
+                            stats["stats"][civ]["custom"] += 1
+                        elif win:
+                            stats["stats"][civ]["wins"] += 1
+                        else:
+                            stats["stats"][civ]["losses"] += 1
+            player_stats.append(stats)
+
+        data: io.StringIO = io.StringIO()
+        writer: csv.DictWriter = csv.DictWriter(
+            data, ["player", "civ", "wins", "losses", "custom", "total"]
+        )
+        writer.writeheader()
+        for player in player_stats:
+            for civ, stats in player["stats"].items():
+                row: Dict[str, Any] = {"player": player["name"]}
+                row.update({"civ": civ})
+                row.update(stats)
+                writer.writerow(row)
+        data.seek(0)
+
+        date: str = datetime.datetime.now().date().strftime("%Y%m%d_")
+        await ctx.send(
+            file=discord.File(data, filename=date + "_".join(players) + ".csv")
+        )
 
 
 class ELO(commands.Cog):
@@ -327,18 +417,22 @@ class AoE2Bot(commands.Bot):
         """Adds all cogs"""
         self.add_cog(ELO(self, self.__class__.__name__))
         self.add_cog(Taunt(self, self.__class__.__name__))
+        self.add_cog(Civs(self, self.__class__.__name__))
         self.add_cog(CommandErrorHandler(self, self.__class__.__name__))
 
     def run(self) -> None:
         super().run(self.__token)
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, debug: bool = False, **kwargs) -> None:
         super().__init__(**kwargs)
 
         self.log = logging.getLogger(f"{self.__class__.__name__}")
 
-        self.__token = os.getenv("DISCORD_BOT_TOKEN")
+        token_env = "DISCORD_BOT_TOKEN"
+        if debug:
+            token_env += "_DEV"
+        self.__token = os.getenv(token_env)
         if self.__token is None:
-            self.log.error("Invalid token in DISCORD_BOT_TOKEN env var!")
+            self.log.error(f"Invalid token in {token_env} env var!")
 
         self.add_cogs()

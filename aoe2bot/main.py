@@ -23,7 +23,7 @@ def main() -> None:
     args: argparse.Namespace = parse_args()
 
     prefix: str = "$" if args.debug else "!"
-    test = bot.AoE2Bot(command_prefix=prefix)
+    test = bot.AoE2Bot(args.debug, command_prefix=prefix)
     test.run()
 
 
