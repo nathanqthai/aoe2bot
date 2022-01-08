@@ -251,7 +251,7 @@ class Civs(commands.Cog):
         player_stats: List[Dict[str, Any]] = []
         for name in players:
             player: Optional[Dict[str, Any]] = self._aoe2_api.find_name(
-                name, board=aoe2net.AoE2net.LeaderboardID.TEAM_RANDOM_MAP
+                name, board=aoe2net.AoE2net.LeaderboardID.ALL
             )
             if player is None:
                 raise ValueError(f"Failed to fetch player {player}")

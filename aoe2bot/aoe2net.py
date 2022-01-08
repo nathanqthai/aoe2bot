@@ -16,6 +16,10 @@ class AoE2net:
         TEAM_RANDOM_MAP = 4
         EMPIRE_WARS = 13
         TEAM_EMPIRE_WARS = 14
+        ALL = -1
+        ALL_RANDOM = -1
+        ALL_EMPIRE_WARS = -3
+
 
     _base_url: str = "https://aoe2.net/api"
     _base_params: Dict[str, Any] = {"game": "aoe2de"}
@@ -166,7 +170,10 @@ class AoE2net:
             "count": count,
         }
 
-        for ids, id_param_name in [(steam_ids, "steam_ids"), (profile_ids, "profile_ids")]:
+        for ids, id_param_name in [
+            (steam_ids, "steam_ids"),
+            (profile_ids, "profile_ids"),
+        ]:
             if ids:
                 if isinstance(ids, list):
                     params.update({id_param_name: ",".join([str(p) for p in ids])})
@@ -194,14 +201,17 @@ class AoE2net:
             )
         :return: The player information
         """
-        players: List[Dict[str, Any]] = self.search(name, board)
-        matched_player: Optional[Dict[str, Any]] = None
-        for player in players:
-            if player.get("name", "").lower() == name.lower():
-                matched_player = player
-                break
+        if board != self.LeaderboardID.ALL:
+            boards = [board]
+        else:
+            boards = [self.LeaderboardID.RANDOM_MAP, self.LeaderboardID.TEAM_RANDOM_MAP]
 
-        return matched_player
+        for board in boards:
+            players: List[Dict[str, Any]] = self.search(name, board)
+            for player in players:
+                if player.get("name", "").lower() == name.lower():
+                    return player
+        return None
 
     def lookup_string(self, key: str, key_id: int) -> Optional[str]:
         s: Optional[str] = None
