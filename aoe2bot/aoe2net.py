@@ -204,7 +204,7 @@ class AoE2net:
         if board != self.LeaderboardID.ALL:
             boards = [board]
         else:
-            boards = [self.LeaderboardID.RANDOM_MAP, self.LeaderboardID.TEAM_RANDOM_MAP]
+            boards = [self.LeaderboardID.UNRANKED, self.LeaderboardID.RANDOM_MAP, self.LeaderboardID.TEAM_RANDOM_MAP]
 
         for board in boards:
             players: List[Dict[str, Any]] = self.search(name, board)
