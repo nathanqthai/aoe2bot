@@ -250,13 +250,12 @@ class Civs(commands.Cog):
 
         player_stats: List[Dict[str, Any]] = []
         for name in players:
-            player: Optional[Dict[str, Any]] = self._aoe2_api.find_name(
-                name, board=aoe2net.AoE2net.LeaderboardID.ALL
-            )
-            if player is None:
-                raise ValueError(f"Failed to fetch player {player}")
+            player: List[Dict[str, Any]] = self._aoe2_api.find_name(name)
+            if not player:
+                await ctx.send(f"Could not find any results for '{name}'.")
+                continue
+            profile_id: Union[str, int] = player[0]["profile_id"]
 
-            profile_id: Union[str, int] = player["profile_id"]
             matches: List[Dict[str, Any]] = self._aoe2_api.matches(
                 profile_ids=profile_id
             )
@@ -277,16 +276,20 @@ class Civs(commands.Cog):
                             stats["stats"][civ]["losses"] += 1
             player_stats.append(stats)
 
+        if not player_stats:
+            await ctx.send(f"No stats found.")
+            return
+
         data: io.StringIO = io.StringIO()
         writer: csv.DictWriter = csv.DictWriter(
-            data, ["player", "civ", "wins", "losses", "custom", "total"]
+            data, ["player", "civ", "wins", "losses", "custom", "total", "mode"]
         )
         writer.writeheader()
-        for player in player_stats:
-            for civ, stats in player["stats"].items():
-                row: Dict[str, Any] = {"player": player["name"]}
-                row.update({"civ": civ})
-                row.update(stats)
+        for ps in player_stats:
+            for c, s in ps["stats"].items():
+                row: Dict[str, Any] = {"player": ps["name"]}
+                row.update({"civ": c})
+                row.update(s)
                 writer.writerow(row)
         data.seek(0)
 
@@ -317,46 +320,14 @@ class ELO(commands.Cog):
 
         self.log.info(f"Registered {self.__class__.__name__} cog to {bot_name}")
 
-    @staticmethod
-    def get_boards(game_type: str) -> List[aoe2net.AoE2net.LeaderboardID]:
-        """
-        Parse the game_type subcommand to determine which leaderboards to check.
-
-        :param game_type: A command specifying the game type, defaults to all
-        :return: A list of leaderboards to check
-        """
-        boards: List[aoe2net.AoE2net.LeaderboardID]
-        if game_type.lower() in ["unranked"]:
-            boards = [aoe2net.AoE2net.LeaderboardID.UNRANKED]
-        elif game_type.lower() in ["solo"]:
-            boards = [aoe2net.AoE2net.LeaderboardID.RANDOM_MAP]
-        elif game_type.lower() in ["team"]:
-            boards = [aoe2net.AoE2net.LeaderboardID.TEAM_RANDOM_MAP]
-        else:
-            boards = [
-                aoe2net.AoE2net.LeaderboardID.UNRANKED,
-                aoe2net.AoE2net.LeaderboardID.DEATHMATCH,
-                aoe2net.AoE2net.LeaderboardID.TEAM_DEATHMATCH,
-                aoe2net.AoE2net.LeaderboardID.RANDOM_MAP,
-                aoe2net.AoE2net.LeaderboardID.TEAM_RANDOM_MAP,
-                aoe2net.AoE2net.LeaderboardID.EMPIRE_WARS,
-                aoe2net.AoE2net.LeaderboardID.TEAM_EMPIRE_WARS,
-            ]
-        return boards
-
     @commands.command()
-    async def elo(self, ctx, name, game_type: str = "all") -> None:
+    async def elo(self, ctx, name) -> None:
         """
         Check a player's elo. Player names with spaces must be in quotes.
 
         Usage: !elo <player_name> <game_type>
             - player_name:
                 The player's username
-            - game_type (optional):
-                This can be any of the following options:
-                    - "all": All leaderboards, default
-                    - "solo": 1v1 Random Map Only
-                    - "team": Team Random Map Only
 
         Examples:
             Get all ELOs for player `GL.TheViper`:
@@ -373,29 +344,21 @@ class ELO(commands.Cog):
         """
         self.log.info(f"Looking up player {name}")
 
-        boards: List[aoe2net.AoE2net.LeaderboardID] = self.get_boards(game_type)
-
         results: List[str] = [f"Ratings for `{name}`:"]
+        boards: List[Dict[str, Any]] = self._aoe2_api.find_name(name)
         for board in boards:
-            board_str = self._aoe2_api.lookup_string("leaderboard", board.value)
-
             try:
-                player: Optional[Dict[str, Any]] = self._aoe2_api.find_name(
-                    name, board=board
-                )
-                if player:
-                    rating: str = player["rating"]
-                    result: str = f"- {board_str}: *{rating}*"
-                    results.append(result)
-            except Exception:
+                board_str = self._aoe2_api.lookup_string("leaderboard", board["leaderboard"].value)
+                rating: str = board["rating"]
+                result: str = f"- {board_str}: *{rating}*"
+                results.append(result)
+            except Exception as e:
                 self.log.exception(f"Error looking up {name}")
-                await ctx.send(
-                    "Encountered an error, please contact your administrator."
-                )
-                return
+                raise e
 
         if len(results) == 1:
             results = [f"Could not find any results for `{name}`!"]
+
         await ctx.send("\n".join(results))
 
 

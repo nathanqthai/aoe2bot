@@ -16,9 +16,6 @@ class AoE2net:
         TEAM_RANDOM_MAP = 4
         EMPIRE_WARS = 13
         TEAM_EMPIRE_WARS = 14
-        ALL = -1
-        ALL_RANDOM = -1
-        ALL_EMPIRE_WARS = -3
 
 
     _base_url: str = "https://aoe2.net/api"
@@ -186,32 +183,22 @@ class AoE2net:
 
         return self.call_api("player/matches", params=params)
 
-    def find_name(
-        self, name: str, board: LeaderboardID = LeaderboardID.RANDOM_MAP
-    ) -> Optional[Dict[str, Any]]:
+    def find_name(self, name: str) -> List[Dict[str, Any]]:
         """
         Performs a case-insensitive player search and returns only exact matches.
 
-        :param name: The player name, will be search as all lowercase
-        :param board: Leaderboard ID (
-                Unranked=0,
-                1v1 Deathmatch=1, Team Deathmatch=2,
-                1v1 Random Map=3, Team Random Map=4,
-                1v1 Empire Wars=13, Team Empire Wars=14
-            )
+        :param name: A list of all the leaderboard information for player
         :return: The player information
         """
-        if board != self.LeaderboardID.ALL:
-            boards = [board]
-        else:
-            boards = [self.LeaderboardID.UNRANKED, self.LeaderboardID.RANDOM_MAP, self.LeaderboardID.TEAM_RANDOM_MAP]
 
-        for board in boards:
+        player_data: List[Dict[str, Any]] = []
+        for board in self.LeaderboardID:
             players: List[Dict[str, Any]] = self.search(name, board)
             for player in players:
                 if player.get("name", "").lower() == name.lower():
-                    return player
-        return None
+                    player["leaderboard"] = board
+                    player_data.append(player)
+        return player_data
 
     def lookup_string(self, key: str, key_id: int) -> Optional[str]:
         s: Optional[str] = None
