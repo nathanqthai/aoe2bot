@@ -17,7 +17,6 @@ class AoE2net:
         EMPIRE_WARS = 13
         TEAM_EMPIRE_WARS = 14
 
-
     _base_url: str = "https://aoe2.net/api"
     _base_params: Dict[str, Any] = {"game": "aoe2de"}
     _strings: Optional[Dict[str, Any]] = None

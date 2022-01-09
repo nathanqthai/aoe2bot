@@ -348,7 +348,9 @@ class ELO(commands.Cog):
         boards: List[Dict[str, Any]] = self._aoe2_api.find_name(name)
         for board in boards:
             try:
-                board_str = self._aoe2_api.lookup_string("leaderboard", board["leaderboard"].value)
+                board_str = self._aoe2_api.lookup_string(
+                    "leaderboard", board["leaderboard"].value
+                )
                 rating: str = board["rating"]
                 result: str = f"- {board_str}: *{rating}*"
                 results.append(result)
