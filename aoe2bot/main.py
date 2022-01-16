@@ -1,7 +1,7 @@
 import argparse
 import logging
 
-import bot
+from aoe2bot.bot import AoE2Bot
 
 logging.basicConfig(level=logging.DEBUG)
 log: logging.Logger = logging.getLogger("main")
@@ -23,8 +23,8 @@ def main() -> None:
     args: argparse.Namespace = parse_args()
 
     prefix: str = "$" if args.debug else "!"
-    test = bot.AoE2Bot(args.debug, command_prefix=prefix)
-    test.run()
+    bot = AoE2Bot(args.debug, command_prefix=prefix)
+    bot.run()
 
 
 if __name__ == "__main__":

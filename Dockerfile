@@ -8,7 +8,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip3 install --upgrade pip && pip3 install --no-cache-dir -r requirements.txt
 
-COPY ./aoe2bot/*.py /app/
+COPY ./aoe2bot /app/aoe2bot
+
+WORKDIR /app/aoe2bot
+ENV PYTHONPATH ${PYTHONPATH}:/app
 
 ENTRYPOINT ["python3", "./main.py"]
 CMD [""]

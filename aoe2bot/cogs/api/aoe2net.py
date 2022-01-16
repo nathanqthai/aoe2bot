@@ -100,7 +100,7 @@ class AoE2net:
         Request the current leaderboards.
 
         :param start: Starting rank (Ignored if search, steam_id, or profile_id are defined)
-        :param count: Number of leaderboard entries to get (Must be 10000 or less))
+        :param count: Number of leaderboard entries to get (Must be 10000 or less)
         :param board: Leaderboard ID (
                 Unranked=0,
                 1v1 Deathmatch=1, Team Deathmatch=2,
