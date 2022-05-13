@@ -61,6 +61,10 @@ class Civs(commands.Cog):
             )
             stats: Dict[str, Any] = {"name": name, "stats": defaultdict(defaultciv)}
             for match in matches:
+                # don't count unranked games
+                if match["game_type"] == self._aoe2_api.LeaderboardID:
+                    continue
+
                 for match_player in match["players"]:
                     if match_player["profile_id"] == profile_id:
                         civ = self._aoe2_api.lookup_string("civ", match_player["civ"])
@@ -74,6 +78,12 @@ class Civs(commands.Cog):
                             stats["stats"][civ]["wins"] += 1
                         else:
                             stats["stats"][civ]["losses"] += 1
+
+                        stats["type"] = match["game_type"]
+
+                        stats["teams"] = {
+                            "num_teams": match["teams"]
+                        }
             player_stats.append(stats)
 
         if not player_stats:

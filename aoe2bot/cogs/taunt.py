@@ -129,7 +129,7 @@ class Taunt(commands.Cog):
                 return self._do_api.get_object(self._space, taunt["file"])
         return None
 
-    @commands.command()
+    @commands.command(aliases=["t"])
     async def taunt(self, ctx, number: int) -> None:
         """
         Plays AoE2:DE taunt.
