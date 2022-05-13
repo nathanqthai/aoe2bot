@@ -43,7 +43,6 @@ class AoE2official:
             self._base_url = base_url
         if base_params is not None:
             self._base_params = base_params
-        self._strings = self.strings()
 
         self.log.debug(f"Initialized {self.__class__.__name__}")
 

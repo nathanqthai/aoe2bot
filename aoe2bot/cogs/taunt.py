@@ -73,6 +73,7 @@ class Taunt(commands.Cog):
     _manifest_name: str = "manifest.json"
     _do_api: DigitalOcean
     _manifest: List[Dict[str, Any]]
+    loop: bool = False
 
     def __init__(
         self,
@@ -129,8 +130,12 @@ class Taunt(commands.Cog):
                 return self._do_api.get_object(self._space, taunt["file"])
         return None
 
+    @commands.command()
+    async def stop(self, ctx) -> None:
+        self.loop = False
+
     @commands.command(aliases=["t"])
-    async def taunt(self, ctx, number: int) -> None:
+    async def taunt(self, ctx, number: int, delay: Optional[int] = None) -> None:
         """
         Plays AoE2:DE taunt.
 
@@ -159,10 +164,19 @@ class Taunt(commands.Cog):
             else:
                 voice_client = await ctx.author.voice.channel.connect(timeout=10)  # type: ignore
 
-            taunt_audio: io.BytesIO = self.get_taunt_audio(number)
+            taunt_audio: io.BytesIO
+            while True:
+                taunt_audio = self.get_taunt_audio(number)
+                voice_client.play(
+                    FFmpegPCMAudio(taunt_audio.read(), pipe=True)
+                )
+                while voice_client.is_playing():
+                    await asyncio.sleep(1)
 
-            voice_client.play(FFmpegPCMAudio(taunt_audio.read(), pipe=True))
-            while voice_client.is_playing():
-                await asyncio.sleep(5)
+                if delay:
+                    await asyncio.sleep(float(delay))
+
+                if not self.loop:
+                    break
 
             taunt_audio.close()
