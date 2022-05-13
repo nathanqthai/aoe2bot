@@ -139,8 +139,17 @@ class Taunt(commands.Cog):
         """
         Plays AoE2:DE taunt.
 
-        Usage: !taunt <number>
+        The number corresponds to an in-game taunt (https://ageofempires.fandom.com/wiki/Taunts#Age_of_Empires_II)
+
+        If a delay is specified, the taunt will loop after the specified number of seconds.
+
+        Stop looping audio using the !stop command.
+
+        Usage: !taunt <number: int> [delay: int]
         """
+        if delay:
+            # if a delay is set, then enable looping audio
+            self.loop = True
 
         taunt_text: Optional[str]
         try:
