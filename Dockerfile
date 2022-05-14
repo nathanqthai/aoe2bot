@@ -14,4 +14,3 @@ WORKDIR /app/aoe2bot
 ENV PYTHONPATH ${PYTHONPATH}:/app
 
 ENTRYPOINT ["python3", "./main.py"]
-CMD [""]
