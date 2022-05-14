@@ -69,7 +69,7 @@ class FFmpegPCMAudio(discord.AudioSource):
 class Taunt(commands.Cog):
     log: logging.Logger
     _bot: commands.Bot
-    _space: str = "aoe2taunts"
+    _space: str
     _manifest_name: str = "manifest.json"
     _do_api: DigitalOcean
     _manifest: List[Dict[str, Any]]
@@ -79,7 +79,7 @@ class Taunt(commands.Cog):
         self,
         bot: commands.Bot,
         bot_name: str,
-        space: Optional[str] = None,
+        space: Optional[str],
         manifest: str = "manifest.json",
     ) -> None:
         """
@@ -92,8 +92,9 @@ class Taunt(commands.Cog):
         """
         self.log = logging.getLogger(f"{bot_name}.{self.__class__.__name__}")
 
-        if space:
-            self._space = space
+        if space is None:
+            raise ValueError(f"{space} is an invalide DO Spaces name.")
+        self._space = space
 
         self._bot = bot
 
