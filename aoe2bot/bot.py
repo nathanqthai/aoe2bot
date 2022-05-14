@@ -38,7 +38,7 @@ class AoE2Bot(commands.Bot):
 
         self.log = logging.getLogger(f"{self.__class__.__name__}")
 
-        token_env = "DISCORD_BOT_TOKEN_DEV"
+        token_env = "DISCORD_BOT_TOKEN"
         space_env = "DIGITALOCEAN_SPACES_NAME"
 
         self.__token: Optional[str] = os.getenv(token_env)
