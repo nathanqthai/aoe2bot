@@ -6,6 +6,8 @@ provider "digitalocean" {
 
 provider "archive" {}
 
+variable "discord_bot_token" {}
+
 variable "do_token" {}
 variable "do_spaces_access_id" {}
 variable "do_spaces_secret_key" {}
@@ -53,7 +55,12 @@ resource "digitalocean_droplet" "aoe2bot_droplet" {
   packages:
 
   runcmd:
+    - cd /root
     - git clone https://github.com/nathanqthai/aoe2bot.git
+    - cd /root/aoe2bot
+    - docker build -t aoe2dev .
+    - docker run -e DISCORD_BOT_TOKEN=${var.discord_bot_token} -e DIGITALOCEAN_SPACES_KEY_ID=${var.do_spaces_access_id} -e DIGITALOCEAN_SPACES_SECRET=${var.do_spaces_secret_key} --rm aoe2dev:latest --debug
+
   EOF
 }
 
