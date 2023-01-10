@@ -6,5 +6,9 @@ terraform {
     archive = {
       source = "registry.terraform.io/hashicorp/archive"
     }
+    docker = {
+      source  = "kreuzwerker/docker"
+      version = "2.16.0"
+    }
   }
 }

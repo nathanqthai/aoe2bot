@@ -81,9 +81,6 @@ class Civs(commands.Cog):
 
                         stats["type"] = match["game_type"]
 
-                        stats["teams"] = {
-                            "num_teams": match["teams"]
-                        }
             player_stats.append(stats)
 
         if not player_stats:

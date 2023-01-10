@@ -22,19 +22,17 @@ variable "tenant" {
   default = "dev"
 }
 
-/* don't need this for now
+variable "aoe2bot_droplet_ssh_key_name" {
+  type = string
+}
+
 resource "digitalocean_container_registry" "aoe2bot_registry" {
-  name                   = "${var.tenant}-aoe2bot-registry"
+  name                   = "aoe2bot-registry"
   subscription_tier_slug = "starter"
 }
 
 resource "digitalocean_container_registry_docker_credentials" "aoe2bot_registry_credentials" {
   registry_name = digitalocean_container_registry.aoe2bot_registry.name
-}
-*/
-
-variable "aoe2bot_droplet_ssh_key_name" {
-  type = string
 }
 
 data "digitalocean_ssh_key" "aoe2bot_droplet" {
